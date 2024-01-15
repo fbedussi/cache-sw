@@ -1,0 +1,8 @@
+i {
+  display: inline-block !important;
+  vertical-align: middle;
+}
+
+i.gg-trash {
+  vertical-align: initial;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "notebook",
+  "version": "1.0.0",
+  "description": "A simple personal notebook",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "author": "Francesco Bedussi",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^5.0.8"
+  }
+}
