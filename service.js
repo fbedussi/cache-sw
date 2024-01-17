@@ -79,13 +79,21 @@ const createApi = ({baseQuery, endpoints}) => {
     fetchFn,
   } = baseQuery
 
+  navigator.serviceWorker.ready
+    .then((registration) => {
+      registration.active?.postMessage({
+        type: 'HANDLE_URL',
+        url: baseUrl,
+      })
+    })
+
   const getBuilder = () => ({
-    query: ({query, providesTags, keepUnusedDataFor}) => endpointName => {
+    query: ({query, providesTags, ttl}) => endpointName => {
       return {
         name: `create${endpointName}QuerySignal`,
         signalCreator: getQuerySignalCreator({
           tags: providesTags,
-          ttl: keepUnusedDataFor,
+          ttl,
           query,
           baseUrl,
           fetchFn,
@@ -118,7 +126,7 @@ const catService = createApi({
         url: `/fact`
       }),
       providesTags: ['cat'],
-      keepUnusedDataFor: DEFAULT_TTL,
+      ttl: DEFAULT_TTL,
     })
   })
 })
@@ -130,6 +138,6 @@ export const invalidateCacheEntry = (tag) => {
     registration.active?.postMessage({
       type: 'INVALIDATE_CACHE_ENTRY',
       req: tagsMap[tag],
-    });
+    })
   })
 }

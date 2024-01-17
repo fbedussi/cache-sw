@@ -1,8 +1,6 @@
 const CACHE_NAME = 'api';
 
-const cachedUrls = [
-  "https://catfact.ninja/fact"
-]
+const cachedBaseUrls = new Set([])
 
 const ttlMap = {}
 
@@ -45,6 +43,10 @@ const cloneResponse = async (response, extraHeaders) => {
 }
 
 self.addEventListener('message', async (event) => {
+  if (event.data?.type === 'HANDLE_URL') {
+    cachedBaseUrls.add(event.data.url)
+  }
+
   if (event.data?.type === 'TTL') {
     const key = getKey(event.data.req)
     ttlMap[key] = event.data.req.ttl
@@ -150,8 +152,24 @@ const applyNetworkFirstStrategy = async event => {
   }
 }
 
+const isManagedUrl = url => {
+  const cachedBaseUrlsValues = cachedBaseUrls.values()
+  
+  let managedUrl = false
+  for (const cachedBaseUrl of cachedBaseUrlsValues) {
+    if (url.includes(cachedBaseUrl)) {
+      managedUrl = true
+      break
+    }
+  }
+
+  return managedUrl
+}
+
 self.addEventListener('fetch', async (event) => {
-  if (event.type !== 'fetch' || !cachedUrls.includes(event.request.url)) {
+  const managedUrl = isManagedUrl(event.request.url)
+
+  if (event.type !== 'fetch' || !managedUrl) {
     return
   }
 
