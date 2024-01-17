@@ -4,4 +4,4 @@ var b=Object.defineProperty;var T=(e,t,a)=>t in e?b(e,t,{enumerable:!0,configura
         <p>${this.catFact.value.isLoading?"loading...":(t=this.catFact.value.data)==null?void 0:t.fact}</p>
         <button onclick=${()=>{W("cat")}}>change cat fact</button>
       </div>
-  `});this.cleanups=[]}connectedCallback(){this.catFact=O(this.cleanups),A(this,this.render)}disconnectedCallback(){this.cleanups.forEach(t=>t())}});const D=async()=>{try{const e=await navigator.serviceWorker.register("/sw.js",{scope:"./"});e.update(),console.log("Service worker registration succeeded:",e)}catch(e){console.error(`Service worker registration failed: ${e}`)}};D();navigator.serviceWorker.controller||location.reload();
+  `});this.cleanups=[]}connectedCallback(){this.catFact=O(this.cleanups),A(this,this.render)}disconnectedCallback(){this.cleanups.forEach(t=>t())}});const D=async()=>{try{const e=await navigator.serviceWorker.register("sw.js",{scope:"./"});e.update(),console.log("Service worker registration succeeded:",e)}catch(e){console.error(`Service worker registration failed: ${e}`)}};D();navigator.serviceWorker.controller||location.reload();
