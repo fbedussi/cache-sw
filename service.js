@@ -8,13 +8,13 @@ const DEFAULT_TTL = 1000 * 60 * 60
 const querySignal = signal()
 
 const getQuerySignalCreator = ({
-  tags, 
-  ttl =  DEFAULT_TTL,
+  tags,
+  ttl = DEFAULT_TTL,
   query,
   baseUrl,
   fetchFn,
 }) => (cleanups, args) => {
-  
+
   navigator.serviceWorker.ready
     .then((registration) => {
       const cb = (event) => {
@@ -34,26 +34,28 @@ const getQuerySignalCreator = ({
 
       const queryData = query(args)
       const url = `${baseUrl}${queryData.url}`
-      const queryDataWithoutUrl = structuredClone(queryData)
-      delete queryDataWithoutUrl.url
+      const requestInfo = structuredClone(queryData)
+      delete requestInfo.url
 
+      const tagInfo = {
+        url,
+        method: queryData.method || 'GET',
+        ttl,
+        body: queryData.body ? JSON.stringify(queryData.body) : null,
+      }
       tags.forEach(tag => {
-        tagsMap[tag] = {
-          url,
-          method: queryData.method || 'GET',
-          ttl,
-        }
+        tagsMap[tag] = tagInfo
       })
 
       registration.active?.postMessage({
         type: 'TTL',
-        req: {ttl},
+        req: tagInfo,
       });
 
       const placeCall = () => {
-       const request = new Request(url, queryDataWithoutUrl)
+        const request = new Request(url, requestInfo)
 
-      fetchFn(request)
+        fetchFn(request)
           .then(res => res.json())
           .then(data => {
             querySignal.value = {
