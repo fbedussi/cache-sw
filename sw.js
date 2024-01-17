@@ -56,11 +56,9 @@ self.addEventListener('message', async (event) => {
     const matchingKeys = keys.filter((request) => {
       return request.url === event.data.req.url &&
         request.method === event.data.req.method &&
-        request.body === JSON.parse(event.data.req.body)
+        request.body === (event.data.req.body ? JSON.parse(event.data.req.body) : null)
     })
     await Promise.all(matchingKeys.map(request => cache.delete(request)))
-    // delete pending[getKey(event.data.req)]
-
 
     const clients = await self.clients.matchAll({
       includeUncontrolled: true,

@@ -1,5 +1,5 @@
-import {render, html, signal} from 'https://cdn.jsdelivr.net/npm/uhtml/preactive.js'
-import {getCatFact, invalidateCacheEntry} from './service.js'
+import {render, html} from 'https://cdn.jsdelivr.net/npm/uhtml/preactive.js'
+import {createGetCatFactQuerySignal, invalidateCacheEntry} from './service.js'
 
 customElements.define('cat-fact', class extends HTMLElement {
   constructor() {
@@ -8,8 +8,7 @@ customElements.define('cat-fact', class extends HTMLElement {
   }
 
   connectedCallback() {
-    this.catFact = signal('')
-    getCatFact(this.catFact, 'cat', this.cleanups)
+    this.catFact = createGetCatFactQuerySignal(this.cleanups)
     render(this, this.render)
   }
 
@@ -20,7 +19,7 @@ customElements.define('cat-fact', class extends HTMLElement {
   render = () => html`
       <div>
         <h1>Cat fact of the day</h1>
-        <p>${this.catFact.value}</p>
+        <p>${this.catFact.value?.data?.fact}</p>
         <button onclick=${() => {
       invalidateCacheEntry('cat')
     }}>change cat fact</button>

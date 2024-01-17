@@ -1,7 +1,21 @@
-const tags = {}
+import {signal} from 'https://cdn.jsdelivr.net/npm/uhtml/preactive.js'
+//@ts-check
 
-export const getCatFact = async (signal, tag, cleanups) => {
-  return navigator.serviceWorker.ready
+const tagsMap = {}
+
+const DEFAULT_TTL = 1000 * 60 * 60
+
+const querySignal = signal()
+
+const getQuerySignalCreator = ({
+  tags, 
+  ttl =  DEFAULT_TTL,
+  query,
+  baseUrl,
+  fetchFn,
+}) => (cleanups, args) => {
+  
+  navigator.serviceWorker.ready
     .then((registration) => {
       const cb = (event) => {
         if (event.data.type === 'CACHE_ENTRY_INVALIDATED') {
@@ -18,41 +32,102 @@ export const getCatFact = async (signal, tag, cleanups) => {
       navigator.serviceWorker.startMessages()
       navigator.serviceWorker.addEventListener('message', cb)
 
-      const placeCall = () => {
-        const req = new Request('https://catfact.ninja/fact', {
-          method: 'GET'
-        })
+      const queryData = query(args)
+      const url = `${baseUrl}${queryData.url}`
+      const queryDataWithoutUrl = structuredClone(queryData)
+      delete queryDataWithoutUrl.url
 
-        tags[tag] = {
-          url: req.url,
-          method: req.method,
-          body: JSON.stringify(req.body),
-          ttl: 1000 * 60 * 60,
+      tags.forEach(tag => {
+        tagsMap[tag] = {
+          url,
+          method: queryData.method || 'GET',
+          ttl,
         }
+      })
 
-        registration.active.postMessage({
-          type: 'TTL',
-          req: tags[tag],
-        });
+      registration.active?.postMessage({
+        type: 'TTL',
+        req: {ttl},
+      });
 
-        fetch(req)
-          .then(res => {
-            return res.json()
+      const placeCall = () => {
+       const request = new Request(url, queryDataWithoutUrl)
+
+      fetchFn(request)
+          .then(res => res.json())
+          .then(data => {
+            querySignal.value = {
+              data
+            }
           })
-          .then(res => {
-            signal.value = res.fact
+          .catch(error => {
+            querySignal.value = {error}
           })
       }
 
       placeCall()
-    });
+    })
+
+  return querySignal
 }
+
+const createApi = ({baseQuery, endpoints}) => {
+  const {
+    baseUrl,
+    fetchFn,
+  } = baseQuery
+
+  const getBuilder = () => ({
+    query: ({query, providesTags, keepUnusedDataFor}) => endpointName => {
+      return {
+        name: `create${endpointName}QuerySignal`,
+        signalCreator: getQuerySignalCreator({
+          tags: providesTags,
+          ttl: keepUnusedDataFor,
+          query,
+          baseUrl,
+          fetchFn,
+        }),
+      }
+    },
+  })
+
+  const signalCreators = Object.entries(endpoints(getBuilder()))
+    .reduce((result, [endpointName, endpointFn]) => {
+      const endpointData = endpointFn(endpointName)
+      result[endpointData.name] = endpointData.signalCreator
+      return result
+    }, {})
+
+  return signalCreators
+}
+
+const fetchBaseQuery = ({baseUrl}) => ({
+  baseUrl,
+  fetchFn: window.fetch,
+})
+
+const catService = createApi({
+  baseQuery: fetchBaseQuery({baseUrl: 'https://catfact.ninja'}),
+
+  endpoints: builder => ({
+    GetCatFact: builder.query({
+      query: () => ({
+        url: `/fact`
+      }),
+      providesTags: ['cat'],
+      keepUnusedDataFor: DEFAULT_TTL,
+    })
+  })
+})
+
+export const {createGetCatFactQuerySignal} = catService
 
 export const invalidateCacheEntry = (tag) => {
   navigator.serviceWorker.ready.then((registration) => {
-    registration.active.postMessage({
+    registration.active?.postMessage({
       type: 'INVALIDATE_CACHE_ENTRY',
-      req: tags[tag],
+      req: tagsMap[tag],
     });
   })
 }
