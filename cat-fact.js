@@ -19,7 +19,7 @@ customElements.define('cat-fact', class extends HTMLElement {
   render = () => html`
       <div>
         <h1>Cat fact of the day</h1>
-        <p>${this.catFact.value?.data?.fact}</p>
+        <p>${this.catFact.value.isLoading ? 'loading...' : this.catFact.value.data?.fact}</p>
         <button onclick=${() => {
       invalidateCacheEntry('cat')
     }}>change cat fact</button>

@@ -5,7 +5,11 @@ const tagsMap = {}
 
 const DEFAULT_TTL = 1000 * 60 * 60
 
-const querySignal = signal()
+const querySignal = signal({
+  isLoading: false,
+  data: undefined,
+  error: undefined,
+})
 
 const getQuerySignalCreator = ({
   tags,
@@ -55,15 +59,23 @@ const getQuerySignalCreator = ({
       const placeCall = () => {
         const request = new Request(url, requestInfo)
 
+        querySignal.value = {
+          ...querySignal.value,
+          isLoading: true,
+        }
         fetchFn(request)
           .then(res => res.json())
           .then(data => {
             querySignal.value = {
-              data
+              data,
+              isLoading: false,
             }
           })
           .catch(error => {
-            querySignal.value = {error}
+            querySignal.value = {
+              error,
+              isLoading: false
+            }
           })
       }
 
