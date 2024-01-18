@@ -5,12 +5,6 @@ const tagsMap = {}
 
 const DEFAULT_TTL = 1000 * 60 * 60
 
-const querySignal = signal({
-  isLoading: false,
-  data: undefined,
-  error: undefined,
-})
-
 const getQuerySignalCreator = ({
   tags,
   ttl = DEFAULT_TTL,
@@ -18,6 +12,11 @@ const getQuerySignalCreator = ({
   baseUrl,
   fetchFn,
 }) => (cleanups, args) => {
+  const querySignal = signal({
+    isLoading: false,
+    data: undefined,
+    error: undefined,
+  })
 
   navigator.serviceWorker.ready
     .then((registration) => {
@@ -85,6 +84,76 @@ const getQuerySignalCreator = ({
   return querySignal
 }
 
+const getMutationCreator = ({
+  invalidatesTags,
+  query,
+  baseUrl,
+  fetchFn,
+}) => {
+  const resultSignal = signal({
+    isLoading: false,
+    data: undefined,
+    error: undefined,
+  })
+
+  const placeCall = (args) => {
+    const mutationData = query(args)
+    const url = `${baseUrl}${mutationData.url}`
+    delete mutationData.url
+    if (mutationData.body) {
+      mutationData.body = JSON.stringify(mutationData.body)
+    }
+
+    const request = new Request(url, mutationData)
+
+    resultSignal.value = {
+      ...resultSignal.value,
+      isLoading: true,
+    }
+
+    fetchFn(request)
+      .then(async res => {
+        if (res.ok) {
+          const data = await res.json()
+          resultSignal.value = {
+            data: {
+              code: res.status,
+              statusText: res.statusText,
+              data,
+            },
+            isError: false,
+            isSuccess: true,
+            isLoading: false,
+          }
+          invalidatesTags.forEach(tag => invalidateCacheEntry(tag))
+        } else {
+          const data = await res.text()
+          resultSignal.value = {
+            error: {
+              code: res.status,
+              statusText: res.statusText,
+              message: data,
+            },
+            isError: true,
+            isSuccess: false,
+            isLoading: false
+          }
+        }
+      })
+  }
+
+  return {
+    mutationFn: (args) => navigator.serviceWorker.ready.then(() => {
+      placeCall(args)
+    }),
+    resultSignal,
+  }
+}
+
+const capitalize = (str) => {
+  return str.split('').map((c, i) => i === 0 ? c.toUpperCase() : c).join('')
+}
+
 const createApi = ({baseQuery, endpoints}) => {
   const {
     baseUrl,
@@ -102,7 +171,8 @@ const createApi = ({baseQuery, endpoints}) => {
   const getBuilder = () => ({
     query: ({query, providesTags, ttl}) => endpointName => {
       return {
-        name: `create${endpointName}QuerySignal`,
+        type: 'query',
+        name: `create${capitalize(endpointName)}Query`,
         signalCreator: getQuerySignalCreator({
           tags: providesTags,
           ttl,
@@ -112,12 +182,26 @@ const createApi = ({baseQuery, endpoints}) => {
         }),
       }
     },
+    mutation: ({query, invalidatesTags}) => endpointName => {
+      const {mutationFn, resultSignal} = getMutationCreator({
+        query,
+        invalidatesTags,
+        baseUrl,
+        fetchFn
+      })
+      return {
+        type: 'mutation',
+        name: `create${capitalize(endpointName)}Mutation`,
+        mutationFn,
+        resultSignal,
+      }
+    }
   })
 
   const signalCreators = Object.entries(endpoints(getBuilder()))
     .reduce((result, [endpointName, endpointFn]) => {
       const endpointData = endpointFn(endpointName)
-      result[endpointData.name] = endpointData.signalCreator
+      result[endpointData.name] = endpointData.type === 'query' ? endpointData.signalCreator : () => [endpointData.mutationFn, endpointData.resultSignal]
       return result
     }, {})
 
@@ -133,17 +217,28 @@ const catService = createApi({
   baseQuery: fetchBaseQuery({baseUrl: 'https://catfact.ninja'}),
 
   endpoints: builder => ({
-    GetCatFact: builder.query({
+    getCatFact: builder.query({
       query: () => ({
         url: `/fact`
       }),
       providesTags: ['cat'],
       ttl: DEFAULT_TTL,
+    }),
+    addCatFact: builder.mutation({
+      query: (body) => ({
+        url: `/fact`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['cat'],
     })
   })
 })
 
-export const {createGetCatFactQuerySignal} = catService
+export const {
+  createGetCatFactQuery,
+  createAddCatFactMutation,
+} = catService
 
 export const invalidateCacheEntry = (tag) => {
   navigator.serviceWorker.ready.then((registration) => {

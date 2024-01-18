@@ -1,5 +1,5 @@
 import {render, html} from 'https://cdn.jsdelivr.net/npm/uhtml/preactive.js'
-import {createGetCatFactQuerySignal, invalidateCacheEntry} from './service.js'
+import {createGetCatFactQuery, createAddCatFactMutation, invalidateCacheEntry} from './service.js'
 
 customElements.define('cat-fact', class extends HTMLElement {
   constructor() {
@@ -8,7 +8,10 @@ customElements.define('cat-fact', class extends HTMLElement {
   }
 
   connectedCallback() {
-    this.catFact = createGetCatFactQuerySignal(this.cleanups)
+    this.catFact = createGetCatFactQuery(this.cleanups)
+    const [postNewFact, postNewFactResult] = createAddCatFactMutation()
+    this.postNewFact = postNewFact
+    this.postNewFactResult = postNewFactResult
     render(this, this.render)
   }
 
@@ -23,6 +26,13 @@ customElements.define('cat-fact', class extends HTMLElement {
         <button onclick=${() => {
       invalidateCacheEntry('cat')
     }}>change cat fact</button>
+    <button onclick=${() => {
+      this.postNewFact({
+        id: '1',
+        text: 'hi',
+      })
+    }}>Post a new fact</button>
+    ${this.postNewFactResult.value.error ? `<div>${this.postNewFactResult.value.error}</div>` : ''}
       </div>
   `
 })
