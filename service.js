@@ -63,17 +63,27 @@ const getQuerySignalCreator = ({
           isLoading: true,
         }
         fetchFn(request)
-          .then(res => res.json())
-          .then(data => {
-            querySignal.value = {
-              data,
-              isLoading: false,
-            }
-          })
-          .catch(error => {
-            querySignal.value = {
-              error,
-              isLoading: false
+          .then(async res => {
+            if (res.ok) {
+              const data = await res.json()
+              querySignal.value = {
+                status: res.status,
+                statusText: res.statusText,
+                data,
+                isError: false,
+                isSuccess: true,
+                isLoading: false,
+              }
+            } else {
+              const data = await res.text()
+              querySignal.value = {
+                status: res.status,
+                statusText: res.statusText,
+                error: data,
+                isError: true,
+                isSuccess: false,
+                isLoading: false
+              }
             }
           })
       }
@@ -116,11 +126,9 @@ const getMutationCreator = ({
         if (res.ok) {
           const data = await res.json()
           resultSignal.value = {
-            data: {
-              code: res.status,
-              statusText: res.statusText,
-              data,
-            },
+            status: res.status,
+            statusText: res.statusText,
+            data,
             isError: false,
             isSuccess: true,
             isLoading: false,
@@ -129,11 +137,9 @@ const getMutationCreator = ({
         } else {
           const data = await res.text()
           resultSignal.value = {
-            error: {
-              code: res.status,
-              statusText: res.statusText,
-              message: data,
-            },
+            status: res.status,
+            statusText: res.statusText,
+            error: data,
             isError: true,
             isSuccess: false,
             isLoading: false

@@ -169,7 +169,7 @@ const isManagedUrl = url => {
 self.addEventListener('fetch', async (event) => {
   const managedUrl = isManagedUrl(event.request.url)
 
-  if (event.type !== 'fetch' || !managedUrl) {
+  if (event.type !== 'fetch'  || event.request.method.toUpperCase() !== 'GET' || !managedUrl) {
     return
   }
 

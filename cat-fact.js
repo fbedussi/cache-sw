@@ -23,16 +23,18 @@ customElements.define('cat-fact', class extends HTMLElement {
       <div>
         <h1>Cat fact of the day</h1>
         <p>${this.catFact.value.isLoading ? 'loading...' : this.catFact.value.data?.fact}</p>
+        <button onclick=${() => invalidateCacheEntry('cat')}>change cat fact</button>
         <button onclick=${() => {
-      invalidateCacheEntry('cat')
-    }}>change cat fact</button>
-    <button onclick=${() => {
-      this.postNewFact({
-        id: '1',
-        text: 'hi',
-      })
-    }}>Post a new fact</button>
-    ${this.postNewFactResult.value.error ? `<div>${this.postNewFactResult.value.error}</div>` : ''}
+          this.postNewFact({
+            id: '1',
+            text: 'hi',
+          })
+        }}>
+          Post a new fact
+        </button>
+        ${this.postNewFactResult.value.error 
+          ? html`<div>${this.postNewFactResult.value.error}</div>` 
+          : ''}
       </div>
   `
 })
