@@ -3,7 +3,7 @@ import './cat-fact.js'
 
 const registerSw = async () => {
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js", {scope: "./"})
+    const registration = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {scope: "./"})
     registration.update();
     console.log("Service worker registration succeeded:", registration)
   } catch (error) {
