@@ -160,7 +160,7 @@ const capitalize = (str) => {
   return str.split('').map((c, i) => i === 0 ? c.toUpperCase() : c).join('')
 }
 
-const createApi = ({baseQuery, endpoints}) => {
+export const createApi = ({baseQuery, endpoints}) => {
   const {
     baseUrl,
     fetchFn,
@@ -214,37 +214,10 @@ const createApi = ({baseQuery, endpoints}) => {
   return signalCreators
 }
 
-const fetchBaseQuery = ({baseUrl}) => ({
+export const fetchBaseQuery = ({baseUrl}) => ({
   baseUrl,
   fetchFn: window.fetch,
 })
-
-const catService = createApi({
-  baseQuery: fetchBaseQuery({baseUrl: 'https://catfact.ninja'}),
-
-  endpoints: builder => ({
-    getCatFact: builder.query({
-      query: () => ({
-        url: `/fact`
-      }),
-      providesTags: ['cat'],
-      ttl: DEFAULT_TTL,
-    }),
-    addCatFact: builder.mutation({
-      query: (body) => ({
-        url: `/fact`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['cat'],
-    })
-  })
-})
-
-export const {
-  createGetCatFactQuery,
-  createAddCatFactMutation,
-} = catService
 
 export const invalidateCacheEntry = (tag) => {
   navigator.serviceWorker.ready.then((registration) => {

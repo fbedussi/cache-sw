@@ -1,6 +1,8 @@
 import {render, html} from 'https://cdn.jsdelivr.net/npm/uhtml/preactive.js'
-import {createGetCatFactQuery, createAddCatFactMutation, invalidateCacheEntry} from './service.js'
+import {createGetCatFactQuery, createAddCatFactMutation} from './catService.js'
+import {invalidateCacheEntry} from './swQuery.js'
 
+//@ts-check
 customElements.define('cat-fact', class extends HTMLElement {
   constructor() {
     super()

@@ -1,3 +1,4 @@
+//@ts-check
 import './cat-fact.js'
 
 const registerSw = async () => {
