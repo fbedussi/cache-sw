@@ -5,7 +5,7 @@ const cachedBaseUrls = new Set([])
 const ttlMap = {}
 
 const getKey = request => {
-  return request.url + request.method + request.body
+  return request.url + request.body
 }
 
 const isValid = function (request, response) {
@@ -57,7 +57,6 @@ self.addEventListener('message', async (event) => {
     const keys = await cache.keys()
     const matchingKeys = keys.filter((request) => {
       return request.url === event.data.req.url &&
-        request.method === event.data.req.method &&
         request.body === (event.data.req.body ? JSON.parse(event.data.req.body) : null)
     })
     await Promise.all(matchingKeys.map(request => cache.delete(request)))
@@ -129,6 +128,7 @@ const applyCacheFirstStrategy = (event) => {
     } catch (err) {
       // Otherwise, make a fresh API call
       return caches.match(event.request).then((cachedResponse) => {
+        // TODO: use offline.json?
         return cachedResponse || caches.match('/offline.json');
       });
     }
@@ -169,7 +169,7 @@ const isManagedUrl = url => {
 self.addEventListener('fetch', async (event) => {
   const managedUrl = isManagedUrl(event.request.url)
 
-  if (event.type !== 'fetch'  || event.request.method.toUpperCase() !== 'GET' || !managedUrl) {
+  if (event.type !== 'fetch' || event.request.method.toUpperCase() !== 'GET' || !managedUrl) {
     return
   }
 
